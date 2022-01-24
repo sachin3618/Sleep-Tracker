@@ -27,6 +27,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.android.trackmysleepquality.R
 import com.example.android.trackmysleepquality.database.SleepDatabase
 import com.example.android.trackmysleepquality.databinding.FragmentSleepTrackerBinding
@@ -62,14 +63,43 @@ class SleepTrackerFragment : Fragment() {
                         this, viewModelFactory).get(SleepTrackerViewModel::class.java)
 
         binding.sleepTrackerViewModel = sleepTrackerViewModel
+        binding.lifecycleOwner = this
 
-        //Code to add GridLayoutManager
-        val manager = GridLayoutManager(activity, 3)
-        binding.sleepList.layoutManager = manager
-        val adapter = SleepNightAdapter(SleepNightAdapter.SleepNightListener {
-            nightId -> sleepTrackerViewModel.onSleepNightClicked(nightId)
+        // Add an Observer on the state variable for showing a Snackbar message
+        // when the CLEAR button is pressed.
+        sleepTrackerViewModel.showSnackBarEvent.observe(viewLifecycleOwner, Observer {
+            if (it == true) { // Observed state is true.
+                Snackbar.make(
+                    requireActivity().findViewById(android.R.id.content),
+                    getString(R.string.cleared_message),
+                    Snackbar.LENGTH_SHORT // How long to display the message.
+                ).show()
+                // Reset state to make sure the snackbar is only shown once, even if the device
+                // has a configuration change.
+                sleepTrackerViewModel.doneShowingSnackbar()
+            }
         })
-        binding.sleepList.adapter = adapter
+
+
+        // Add an Observer on the state variable for Navigating when STOP button is pressed.
+        sleepTrackerViewModel.navigateToSleepQuality.observe(viewLifecycleOwner, Observer { night ->
+            night?.let {
+                // We need to get the navController from this, because button is not ready, and it
+                // just has to be a view. For some reason, this only matters if we hit stop again
+                // after using the back button, not if we hit stop and choose a quality.
+                // Also, in the Navigation Editor, for Quality -> Tracker, check "Inclusive" for
+                // popping the stack to get the correct behavior if we press stop multiple times
+                // followed by back.
+                // Also: https://stackoverflow.com/questions/28929637/difference-and-uses-of-oncreate-oncreateview-and-onactivitycreated-in-fra
+                this.findNavController().navigate(
+                    SleepTrackerFragmentDirections
+                        .actionSleepTrackerFragmentToSleepQualityFragment(night.nightId))
+                // Reset state to make sure we only navigate once, even if the device
+                // has a configuration change.
+                sleepTrackerViewModel.doneNavigating()
+            }
+        })
+
 
         sleepTrackerViewModel.navigateToSleepDataQuality.observe(viewLifecycleOwner, Observer { night ->
             night?.let {
@@ -78,10 +108,21 @@ class SleepTrackerFragment : Fragment() {
             }
         })
 
+
+        //Code to add GridLayoutManager
+
+
+        val adapter = SleepNightAdapter(SleepNightListener {
+            nightId -> sleepTrackerViewModel.onSleepNightClicked(nightId)
+        })
+        binding.sleepList.adapter = adapter
+
+
+
         sleepTrackerViewModel.nights.observe(viewLifecycleOwner, Observer {
 
             it?.let {
-                adapter.submitList(it)
+                adapter.addHeaderAndSubmitList(it)
 
                 // adapter.submitList is a function of SleepNightAdapter.ListAdapter to submit new list of object to be updated into the recylerView.
             }
@@ -95,42 +136,12 @@ class SleepTrackerFragment : Fragment() {
             */
         })
 
-        binding.lifecycleOwner = this
 
 
-        // Add an Observer on the state variable for showing a Snackbar message
-        // when the CLEAR button is pressed.
-        sleepTrackerViewModel.showSnackBarEvent.observe(viewLifecycleOwner, Observer {
-            if (it == true) { // Observed state is true.
-                Snackbar.make(
-                        requireActivity().findViewById(android.R.id.content),
-                        getString(R.string.cleared_message),
-                        Snackbar.LENGTH_SHORT // How long to display the message.
-                ).show()
-                // Reset state to make sure the snackbar is only shown once, even if the device
-                // has a configuration change.
-                sleepTrackerViewModel.doneShowingSnackbar()
-            }
-        })
 
-        // Add an Observer on the state variable for Navigating when STOP button is pressed.
-        sleepTrackerViewModel.navigateToSleepQuality.observe(viewLifecycleOwner, Observer { night ->
-            night?.let {
-                // We need to get the navController from this, because button is not ready, and it
-                // just has to be a view. For some reason, this only matters if we hit stop again
-                // after using the back button, not if we hit stop and choose a quality.
-                // Also, in the Navigation Editor, for Quality -> Tracker, check "Inclusive" for
-                // popping the stack to get the correct behavior if we press stop multiple times
-                // followed by back.
-                // Also: https://stackoverflow.com/questions/28929637/difference-and-uses-of-oncreate-oncreateview-and-onactivitycreated-in-fra
-                this.findNavController().navigate(
-                        SleepTrackerFragmentDirections
-                                .actionSleepTrackerFragmentToSleepQualityFragment(night.nightId))
-                // Reset state to make sure we only navigate once, even if the device
-                // has a configuration change.
-                sleepTrackerViewModel.doneNavigating()
-            }
-        })
+
+
+
 
         return binding.root
     }
