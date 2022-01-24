@@ -27,7 +27,6 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.android.trackmysleepquality.R
 import com.example.android.trackmysleepquality.database.SleepDatabase
 import com.example.android.trackmysleepquality.databinding.FragmentSleepTrackerBinding
@@ -110,7 +109,16 @@ class SleepTrackerFragment : Fragment() {
 
 
         //Code to add GridLayoutManager
+        val manager = GridLayoutManager(activity, 3)
+        binding.sleepList.layoutManager = manager
 
+        manager.spanSizeLookup  = object : GridLayoutManager.SpanSizeLookup(){
+            override fun getSpanSize(position: Int) = when(position) {
+                0 -> 3 // Occupy 3 span size at 0th position of recylerView (3 emoji spaces is getting occupied)
+                else -> 1 // else at all the position of recyclerView occupy 1 span size (1 emoji space)
+            }
+
+        }
 
         val adapter = SleepNightAdapter(SleepNightListener {
             nightId -> sleepTrackerViewModel.onSleepNightClicked(nightId)
