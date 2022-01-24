@@ -21,13 +21,10 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.android.trackmysleepquality.R
-import com.example.android.trackmysleepquality.convertDurationToFormatted
-import com.example.android.trackmysleepquality.convertNumericQualityToString
 import com.example.android.trackmysleepquality.database.SleepNight
 import com.example.android.trackmysleepquality.databinding.ListItemSleepNightBinding
 
-class SleepNightAdapter : ListAdapter<SleepNight,   // ListAdapter is used to introduce the SleepNightAdapter that it uses an list of sleepNight objects to display into recyclerView
+class SleepNightAdapter(val  clickListener: SleepNightListener) : ListAdapter<SleepNight,   // ListAdapter is used to introduce the SleepNightAdapter that it uses an list of sleepNight objects to display into recyclerView
         SleepNightAdapter.ViewHolder>(SleepNightDiffCallback()) {
 
 
@@ -46,6 +43,10 @@ class SleepNightAdapter : ListAdapter<SleepNight,   // ListAdapter is used to in
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+
+        holder.bind(getItem(position)!!, clickListener)
+
+
        /*
        This is also not needed to write because ListAdapter provide us with an function getItem.
 
@@ -53,8 +54,7 @@ class SleepNightAdapter : ListAdapter<SleepNight,   // ListAdapter is used to in
        val item = data[position]
 
        */
-        val item = getItem(position)
-        holder.bind(item)
+
 
     }
 
@@ -72,9 +72,10 @@ class SleepNightAdapter : ListAdapter<SleepNight,   // ListAdapter is used to in
 
     class ViewHolder private constructor(val binding: ListItemSleepNightBinding) : RecyclerView.ViewHolder(binding.root){
 
-        fun bind(item: SleepNight) {
+        fun bind(item: SleepNight, clickListener: SleepNightListener) {
 
             binding.sleep = item
+            binding.clickListener = clickListener
             binding.executePendingBindings()
      /*
          We know don't need to define this variables to update the fragment, we can use dataBinding in XML
@@ -119,6 +120,11 @@ class SleepNightAdapter : ListAdapter<SleepNight,   // ListAdapter is used to in
         override fun areContentsTheSame(oldItem: SleepNight, newItem: SleepNight): Boolean {
             return oldItem == newItem
         }
+
+    }
+
+    class SleepNightListener(val clickListener: (sleepId: Long) -> Unit){
+        fun onClick(night: SleepNight) = clickListener(night.nightId)
 
     }
 
